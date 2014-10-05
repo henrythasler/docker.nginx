@@ -154,7 +154,7 @@ RUN cd $BPATH/$NGINX_VERSION && ./configure \
 	   } >> /etc/nginx/nginx.conf
 
 # Exclude nginx from future updates. Clean up APT when done.
-RUN apt-mark hold nginx && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+RUN apt-mark hold nginx nginx-core nginx-common && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # webserver root directory
 WORKDIR /usr/share/nginx/html
