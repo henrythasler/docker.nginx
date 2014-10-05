@@ -153,8 +153,8 @@ RUN cd $BPATH/$NGINX_VERSION && ./configure \
 		echo 'daemon off;'; \
 	   } >> /etc/nginx/nginx.conf
 
-# Clean up APT when done.
-RUN apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+# Exclude nginx from future updates. Clean up APT when done.
+RUN apt-mark hold nginx && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 # webserver root directory
 WORKDIR /usr/share/nginx/html
