@@ -153,6 +153,10 @@ RUN cd $BPATH/$NGINX_VERSION && ./configure \
 		echo 'daemon off;'; \
 	   } >> /etc/nginx/nginx.conf
 
+# Optimize nginx settings for better performance
+ADD optimizations.conf /etc/nginx/conf.d/optimizations.conf
+RUN sed -i "s#worker_processes 4;#worker_processes 8;#" /etc/nginx/nginx.conf
+   
 # Exclude nginx from future updates. Clean up APT when done.
 RUN apt-mark hold nginx nginx-core nginx-common && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
