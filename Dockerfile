@@ -64,8 +64,8 @@ RUN sed -i 's/\(expose_php *= *\).*/\1Off/' /etc/php5/fpm/php.ini
 #	} > /usr/share/nginx/html/info.php
         
 # define the desired versions
-ENV NGINX_VERSION nginx-1.7.8
-ENV OPENSSL_VERSION openssl-1.0.1j
+ENV NGINX_VERSION nginx-1.9.4
+ENV OPENSSL_VERSION openssl-1.0.2d
 ENV PCRE_VERSION pcre-8.36
 
 # path to download location
