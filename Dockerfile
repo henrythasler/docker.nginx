@@ -22,46 +22,23 @@ RUN apt-get install -y --no-install-recommends \
 		build-essential \
 		zlib1g-dev
 
-# prepare nginx+php-fpm environment
-RUN apt-get install -y --no-install-recommends nginx sqlite3 php5-sqlite php5-fpm php5-curl php5-gd php5-cli php5-mcrypt php5-mysql php-apc && apt-get remove -y nginx
+# prepare nginx+php-fpm environment (php5)
+#RUN apt-get install -y --no-install-recommends nginx sqlite3 php5-sqlite php5-fpm php5-curl php5-gd php5-cli php5-mcrypt php5-mysql php-apc && apt-get remove -y nginx
 
-# start fpm-module on startup
-RUN 	{ \
-	echo '#!/bin/sh -e'; \
-	echo 'php5-fpm'; \
-	echo 'exit 0'; \
-	} > /etc/rc.local
-
-# set default site config incl. php-fpm
-RUN     { \
-        echo 'server {'; \
-        echo '        listen 80 default_server;'; \
-        echo '        listen [::]:80 default_server ipv6only=on;'; \
-        echo '        root /usr/share/nginx/html;'; \
-        echo '        index index.html index.htm;'; \
-        echo '        server_name localhost;'; \
-        echo '        location / {'; \
-        echo '                try_files $uri $uri/ =404;'; \
-        echo '        }'; \
-        echo '        location ~ [^/].php(/|$) {'; \
-        echo '                fastcgi_split_path_info ^(.+?.php)(/.*)$;'; \
-        echo '                if (!-f $document_root$fastcgi_script_name) {'; \
-        echo '                   return 404;'; \
-        echo '                }'; \
-        echo '                fastcgi_pass unix:/var/run/php5-fpm.sock;'; \
-        echo '                fastcgi_index index.php;'; \
-        echo '                include fastcgi_params;'; \
-        echo '        }'; \
-        echo '}'; \
-        } > /etc/nginx/sites-available/default
-
-# hide X-Powered-By: $PHP_VERSION in response header
-RUN sed -i 's/\(expose_php *= *\).*/\1Off/' /etc/php5/fpm/php.ini
-
-# setup php test page
-#RUN	{ \
-#	echo '<?php phpinfo(); ?>'; \
-#	} > /usr/share/nginx/html/info.php
+# prepare nginx+php-fpm environment (php7)
+RUN LC_ALL=en_US.UTF-8 add-apt-repository -y ppa:ondrej/php
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends \
+                nginx \
+                sqlite3 \
+                php7.0-sqlite \
+                php7.0-fpm \
+                php7.0-curl \
+                php7.0-gd \
+                php7.0-cli \
+                php7.0-mcrypt \
+                php7.0-mysql \
+                && apt-get remove -y nginx
         
 # define the desired versions
 ENV NGINX_VERSION nginx-1.10.3
@@ -154,9 +131,25 @@ RUN cd $BPATH/$NGINX_VERSION && ./configure \
 	   } >> /etc/nginx/nginx.conf
 
 # Optimize nginx settings for better performance
-ADD optimizations.conf /etc/nginx/conf.d/optimizations.conf
+COPY optimizations.conf /etc/nginx/conf.d/optimizations.conf
 RUN sed -i "s#worker_processes 4;#worker_processes 8;#" /etc/nginx/nginx.conf
-   
+
+# start fpm-module on startup
+RUN     { \
+        echo '#!/bin/sh -e'; \
+        echo 'php-fpm7.0'; \
+        echo 'exit 0'; \
+        } > /etc/rc.local
+
+# create socket directory (don't know why it doesn't do that on install)
+RUN mkdir -p /run/php 
+        
+# set default site config incl. php-fpm
+COPY default.conf /etc/nginx/sites-available/default        
+        
+# setup php test page
+COPY info.php /usr/share/nginx/html/info.php
+
 # Exclude nginx from future updates. Clean up APT when done.
 RUN apt-mark hold nginx nginx-core nginx-common && apt-get clean && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
@@ -164,5 +157,3 @@ RUN apt-mark hold nginx nginx-core nginx-common && apt-get clean && rm -rf /var/
 WORKDIR /usr/share/nginx/html
 
 EXPOSE 80
-
-
